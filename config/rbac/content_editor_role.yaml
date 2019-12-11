@@ -1,0 +1,26 @@
+# permissions to do edit contents.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: content-editor-role
+rules:
+- apiGroups:
+  - filter.tribit.io
+  resources:
+  - contents
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - filter.tribit.io
+  resources:
+  - contents/status
+  verbs:
+  - get
+  - patch
+  - update

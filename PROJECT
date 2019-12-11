@@ -1,0 +1,7 @@
+domain: tribit.io
+repo: tribit.io/content-filter-controller
+resources:
+- group: filter
+  kind: Content
+  version: v1alpha1
+version: "2"
