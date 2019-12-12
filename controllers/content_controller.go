@@ -27,6 +27,26 @@ import (
 	filterv1alpha1 "tribit.io/content-filter-controller/api/v1alpha1"
 )
 
+type Data interface{}
+
+type Monad func(error) (Data, error)
+
+func Get(d Data) Monad {
+	return func(e error) (Data, error) {
+		return d, e
+	}
+}
+
+func Next(m Monad, f func(Data) Monad) Monad {
+	return func(e error) (Data, error) {
+		newData, newError := m(e)
+		if newError != nil {
+			return nil, newError
+		}
+		return f(newData)(newError)
+	}
+}
+
 // ContentReconciler reconciles a Content object
 type ContentReconciler struct {
 	client.Client
@@ -39,11 +59,42 @@ type ContentReconciler struct {
 
 func (r *ContentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	_ = context.Background()
-	_ = r.Log.WithValues("content", req.NamespacedName)
+	logger := r.Log.WithValues("content", req.NamespacedName)
+
+	contentFilter := &filterv1alpha1.Content{}
+
+	r.Client.Get(context.Background(), req.NamespacedName, contentFilter)
+
+	if contentFilter.Status.Provisioned {
+		return ctrl.Result{}, nil
+	}
 
 	// your logic here
+	step := Get(contentFilter)
+	step = Next(step, updateStatus)
+	_, err := step(nil)
 
-	return ctrl.Result{}, nil
+	if err != nil {
+		logger.Error(err, "failed to reconcile content filter")
+	}
+
+	err = r.Client.Status().Update(context.Background(), contentFilter)
+
+	if err != nil {
+		logger.Error(err, "failed to update content filter")
+		return ctrl.Result{}, nil
+	}
+
+	return ctrl.Result{Requeue: true}, nil
+}
+
+func updateStatus(d Data) Monad {
+	pipe := d.(*filterv1alpha1.Content)
+	return func(e error) (Data, error) {
+
+		pipe.Status.Provisioned = true
+		return pipe, e
+	}
 }
 
 func (r *ContentReconciler) SetupWithManager(mgr ctrl.Manager) error {
