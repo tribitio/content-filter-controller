@@ -1,0 +1,7 @@
+apiVersion: filter.tribit.io/v1alpha1
+kind: Content
+metadata:
+  generateName: content-
+spec:
+  # Add fields here
+  foo: bar

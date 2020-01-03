@@ -76,6 +76,7 @@ func (r *ContentReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if err != nil {
 		logger.Error(err, "failed to reconcile content filter")
+		return ctrl.Result{}, err
 	}
 
 	err = r.Client.Status().Update(context.Background(), contentFilter)
